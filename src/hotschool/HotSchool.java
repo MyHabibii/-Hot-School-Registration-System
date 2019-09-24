@@ -5,7 +5,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.InputMismatchException;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -16,89 +18,136 @@ public class HotSchool {
 
     // Outside of main so that all methods can use it
     public static Scanner scanner = new Scanner(System.in);
-    public static Connection connection = null;
+    public static Connection connection = DBConnector.getConnection();
     public static PreparedStatement statement = null;
     public static ResultSet resultSet = null;
+    private static StudentList studentList = new StudentList();
+    private static CourseList courseList = new CourseList();
 
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
-        String dbURL = "jdbc:mysql://localhost:3306/hotsummer";
-        String user = "root";
-        String password = "Muhaarib21";
+    public static void main(String[] args) throws SQLException {
 
-        try {
-            connection = DriverManager.getConnection(dbURL, user, password);
-            menu();
-        } catch (SQLException e) {
-            System.out.println("Error getting connection!");
-            e.printStackTrace();
-            System.out.println(e.getMessage());
-            System.out.println(e.getSQLState());
-            System.out.println(e.getErrorCode());
+        menu();
+
+    }
+
+    // This method adds courses to list
+    public static void courseList() throws SQLException {
+        // Refreshing the course list
+        courseList.clear();
+
+        // Writing SQL query that selects the everything from the course table 
+        resultSet = connection.createStatement().executeQuery("SELECT * FROM course");
+
+        // Adding courses from database to list
+        while (resultSet.next()) {
+            courseList.add(new Course(resultSet.getInt("id"), resultSet.getString("name"), resultSet.getString("time")));
         }
     }
 
-    /**
-     * This method displays all the available students
-     *
-     * @throws SQLException
-     */
-    public static void displayAllStudents() throws SQLException {
-        // SQL query that selects the id, firstname, lastname from the student table 
-        String allStudentsSQL = "SELECT id, firstname, lastname "
-                + "FROM student";
+    // This method adds students to list
+    public static void studentList() throws SQLException {
+        // Refreshing the student list
+        studentList.clear();
 
-        // Prepares the statment
-        statement = connection.prepareStatement(allStudentsSQL);
+        // Writing SQL query that selects everything from the student table 
+        resultSet = connection.createStatement().executeQuery("SELECT * FROM student");
 
-        // Executing the statement that just got prepared
-        resultSet = statement.executeQuery();
-
-        // Printing the id, first name, last name
-        System.out.println("\nList Of All Students");
-        System.out.println("------------------------------------");
-        System.out.printf("%2s %15s %15s\n", "ID", "First Name", "Last Name");
-        System.out.println("------------------------------------");
-
-        // Goes through each row
+        // Adding students from database to list
         while (resultSet.next()) {
-            System.out.printf("%2d %15s %15s\n", resultSet.getInt(1), resultSet.getString(2), resultSet.getString(3));
+            studentList.add(new Student(resultSet.getInt("id"), resultSet.getString("firstName"), resultSet.getString("lastName"), resultSet.getInt("age")));
         }
-        System.out.println("------------------------------------");
+    }
+
+    // This method displays all the available students
+    public static void displayAllStudents() throws SQLException {
+        // Formating output for console 
+        System.out.printf("%2s %15s %15s %5s\n", "ID", "First Name", "Last Name", "Age");
+        System.out.println("------------------------------------------");
+
+        // Loop that goes through studentList
+        for (int i = 0; i < studentList.getStudentList().size(); i++) {
+            int id = studentList.getStudentList().get(i).getStudentID();
+            String firstName = studentList.getStudentList().get(i).getFirstName();
+            String lastName = studentList.getStudentList().get(i).getLastName();
+            int age = studentList.getStudentList().get(i).getStudentAge();
+
+            System.out.printf("%2d %15s %15s %5d\n", id, firstName, lastName, age);
+        }
+
+        // Formating output for console
+        System.out.println("------------------------------------------");
     }
 
     public static void displayAllCourses() throws SQLException {
-        // SQL query that selects everything from the course table
-        String allCoursesSQL = "SELECT * "
-                + "FROM course";
+        // Formating output for console 
+        System.out.printf("%2s %15s %15s\n", "ID", "Course Name", "Time");
+        System.out.println("-----------------------------------");
 
-        // Prepares the statment
-        statement = connection.prepareStatement(allCoursesSQL);
+        // Loop that goes through courseList
+        for (int i = 0; i < courseList.getCourseList().size(); i++) {
+            int id = courseList.getCourseList().get(i).getCourseID();
+            String courseName = courseList.getCourseList().get(i).getCourseName();
+            String courseTime = courseList.getCourseList().get(i).getCourseTime();
 
-        // Executing the statement that just got prepared
+            System.out.printf("%2d %15s %15s\n", id, courseName, courseTime);
+        }
+
+        // Formating output for console
+        System.out.println("-----------------------------------");
+    }
+
+    public static void listCoursesByStudentName(String firstname, String lastName) throws SQLException {
+        statement = connection.prepareStatement("SELECT c.name, c.time FROM student s, course c, studentcourse sc "
+                + "WHERE sc.studentId = s.id AND sc.courseId = c.id AND s.firstname = ? AND s.lastname = ?");
+        statement.setString(1, firstname);
+        statement.setString(2, lastName);
         resultSet = statement.executeQuery();
 
-        // Printing the id, course name, time
-        System.out.println("\nList Of All Courses");
-        System.out.println("----------------------------");
-        System.out.printf("%2s %10s %10s\n", "ID", "Course", "Time");
-        System.out.println("----------------------------");
-
-        // Goes through each row
-        while (resultSet.next()) {
-            System.out.printf("%2d %10s %10s\n", resultSet.getInt(1), resultSet.getString(2), resultSet.getString(3));
+        // Checks if given student is enrolled in any courses
+        if (!resultSet.next()) {
+            System.out.printf("\n%s %s is not enrolled in any courses\n", firstname, lastName);
+        } else {
+            // Formating output for console 
+            System.out.printf("\nList Of Courses That %s %s Is Enrolled In\n", firstname, lastName);
+            System.out.println("--------------------------------");
+            System.out.printf("%13s %15s\n", "Course Name", "Time");
+            System.out.println("--------------------------------");
+            do {
+                String courseName = resultSet.getString("name");
+                String time = resultSet.getString("time");
+                System.out.printf("%13s %15s\n", courseName, time);
+            } while (resultSet.next());
+            System.out.println("--------------------------------");
         }
-        System.out.println("----------------------------");
+    }
+
+    public static String courseNameValidation() {
+        String userCourseName = "";
+        do {
+            // Asking user to enter course name
+            System.out.print("Course Name: ");
+            userCourseName = scanner.next();
+            if (!Course.isValidCourseName(userCourseName)) {
+                System.out.println("\nCourse name must be a letter\n");
+            }
+        } while (!Course.isValidCourseName(userCourseName));
+        return userCourseName;
     }
 
     public static void menu() throws SQLException {
         int selection;
+        int numRowsAffected = 0;
         boolean keepAsking = true;
         boolean continueInput = true;
 
-        int numRowsAffected = 0;
+        // Loading students
+        //List<Student> students = studentList();
+        studentList();
+        // Loading courses
+        courseList();
 
         // This will keep asking the user to select from the options given and will catch any wrong inputs
         while (keepAsking) {
@@ -123,86 +172,63 @@ public class HotSchool {
                 // Menu options
                 switch (selection) {
                     case 1: // List Courses given a student first name and last name
-
                         // Calling method that dispalys all the students available 
                         displayAllStudents();
 
-                        // Asking user to enter first name
-                        System.out.print("First Name: ");
-                        String userFirstName = scanner.next();
+                        String userFirstName = "";
+                        String userLastName = "";
 
-                        // Asking user to enter last name
-                        System.out.print("Last Name: ");
-                        String userLastName = scanner.next();
-
-                        // Checking if user enters a letter for first name and last name
-                        if (!(userFirstName.matches("[a-zA-Z]+") && userLastName.matches("[a-zA-Z]+"))) {
-                            System.out.println("\nFirst name and last name must be a letter");
-                        } else {
-                            String courseNameSQL = "SELECT c.name, c.time "
-                                    + "FROM student s, course c, studentcourse sc "
-                                    + "WHERE sc.studentId = s.id AND sc.courseId = c.id AND s.firstname = ? AND s.lastname = ?";
-
-                            statement = connection.prepareStatement(courseNameSQL);
-                            statement.setString(1, userFirstName);
-                            statement.setString(2, userLastName);
-                            resultSet = statement.executeQuery();
-
-                            // Checks if given student is enrolled in any courses
-                            if (!resultSet.next()) {
-                                System.out.printf("\n%s %s is not enrolled in any courses\n", userFirstName, userLastName);
-                            } else {
-                                // Printing out result
-                                System.out.printf("\nList Of Courses That %s %s Is Enrolled In\n", userFirstName, userLastName);
-                                System.out.println("--------------------------");
-                                System.out.printf("%10s %10s\n", "Course", "Time");
-                                System.out.println("--------------------------");
-                                do {
-                                    String course = resultSet.getString(1);
-                                    String time = resultSet.getString(2);
-                                    System.out.printf("%10s %10s\n", course, time);
-                                } while (resultSet.next());
-                                System.out.println("--------------------------");
+                        // Validating first name
+                        do {
+                            // Asking user to enter first name
+                            System.out.print("First Name: ");
+                            userFirstName = scanner.next();
+                            if (!Student.isValidStudentName(userFirstName)) {
+                                System.out.println("\nFirst name must a letter\n");
                             }
-                        }
+                        } while (!Student.isValidStudentName(userFirstName));
+
+                        do {
+                            /// Asking user to enter last name
+                            System.out.print("Last Name: ");
+                            userLastName = scanner.next();
+                            if (!Student.isValidStudentName(userLastName)) {
+                                System.out.println("\nLast name must be a letter\n");
+                            }
+                        } while (!Student.isValidStudentName(userLastName));
+
+                        listCoursesByStudentName(userFirstName, userLastName);
                         break;
                     case 2: // List Students given a course name    
 
                         // Calling method that dispalys all the courses available 
                         displayAllCourses();
+                        
+                        // Validating for course name
+                        String userCourseName = courseNameValidation();
+                        
+                        String firstLastNameSQL = "SELECT s.firstname, s.lastname "
+                                + "FROM student s, course c, studentcourse sc "
+                                + "WHERE sc.studentId = s.id AND sc.courseId = c.id AND c.name = ?;";
 
-                        // Asking user to enter course name
-                        System.out.print("Course Name: ");
-                        String userCourseName = scanner.next();
+                        statement = connection.prepareStatement(firstLastNameSQL);
+                        statement.setString(1, userCourseName);
+                        resultSet = statement.executeQuery();
 
-                        // Checking if user enters a letter for course name
-                        if (!userCourseName.matches("[a-zA-Z]+")) {
-                            System.out.println("\nCourse name must be a letter");
+                        // Checks if students are enrolled in the course given
+                        if (!resultSet.next()) {
+                            System.out.printf("\nThere are no students enrolled in %s\n", userCourseName);
                         } else {
-                            String firstLastNameSQL = "SELECT s.firstname, s.lastname "
-                                    + "FROM student s, course c, studentcourse sc "
-                                    + "WHERE sc.studentId = s.id AND sc.courseId = c.id AND c.name = ?;";
-
-                            statement = connection.prepareStatement(firstLastNameSQL);
-                            statement.setString(1, userCourseName);
-                            resultSet = statement.executeQuery();
-                            resultSet.next();
-
-                            // Checks if students are enrolled in the course given
-                            if (!resultSet.next()) {
-                                System.out.printf("\nThere are no students enrolled in %s\n", userCourseName);
-                            } else {
-                                System.out.printf("\nList Of Students That Are Enrolled in %s\n", userCourseName);
-                                System.out.println("------------------------------------");
-                                System.out.printf("%15s %15s\n", "First Name", "Last Name");
-                                System.out.println("------------------------------------");
-                                do {
-                                    String firstName = resultSet.getString(1);
-                                    String lastName = resultSet.getString(2);
-                                    System.out.printf("%15s %15s\n", firstName, lastName);
-                                } while (resultSet.next());
-                                System.out.println("------------------------------------");
-                            }
+                            System.out.printf("\nList Of Students That Are Enrolled in %s\n", userCourseName);
+                            System.out.println("------------------------------------");
+                            System.out.printf("%15s %15s\n", "First Name", "Last Name");
+                            System.out.println("------------------------------------");
+                            do {
+                                String firstName = resultSet.getString(1);
+                                String lastName = resultSet.getString(2);
+                                System.out.printf("%15s %15s\n", firstName, lastName);
+                            } while (resultSet.next());
+                            System.out.println("------------------------------------");
                         }
                         break;
                     case 3: // Add Course
@@ -210,59 +236,86 @@ public class HotSchool {
                         // Calling method that dispalys all the courses available 
                         displayAllCourses();
 
-                        // Asking user to enter course name
-                        System.out.print("Course Name: ");
-                        userCourseName = scanner.next();
+                        String userTime = "";
 
-                        // Asking user to enter time
-                        System.out.print("Time: ");
-                        String userTime = scanner.next();
+                        do {
+                            // Asking user to enter course name
+                            System.out.print("Course Name: ");
+                            userCourseName = scanner.next();
+                            if (!Course.isValidCourseName(userCourseName)) {
+                                System.out.println("\nCourse name must be a letter\n");
+                            }
+                        } while (!Course.isValidCourseName(userCourseName));
 
-                        // Checking if user enters a letter for course name and proper format for time
-                        if (!(userCourseName.matches("[a-zA-Z]+") && userTime.matches("^([0-1]?[0-9]|2[0-3]):[0-5][0-9]"))) {
-                            System.out.println("\nCourse name must be a letter and time must match HH:MM format");
-                        } else {
-                            String insertCourse = "INSERT INTO course (name, time)"
-                                    + "VALUES (?, ?)";
+                        do {
+                            // Asking user to enter time
+                            System.out.print("Time: ");
+                            userTime = scanner.next();
+                            if (!Course.isValidCourseTime(userTime)) {
+                                System.out.println("\nCourse time must be in HH:MM format\n");
+                            }
+                        } while (!Course.isValidCourseTime(userTime));
 
-                            statement = connection.prepareStatement(insertCourse);
-                            statement.setString(1, userCourseName);
-                            statement.setString(2, userTime);
+                        String insertCourse = "INSERT INTO course (name, time)"
+                                + "VALUES (?, ?)";
 
-                            numRowsAffected = statement.executeUpdate();
-                            System.out.println(numRowsAffected + " row(s) affeted");
-                        }
+                        statement = connection.prepareStatement(insertCourse);
+                        statement.setString(1, userCourseName);
+                        statement.setString(2, userTime);
+
+                        numRowsAffected = statement.executeUpdate();
+                        System.out.println(numRowsAffected + " row(s) affeted");
+
+                        // Updating the course list
+                        courseList();
                         break;
                     case 4: // Add Student
 
-                        // Asking user to enter first name, last name, age
-                        System.out.print("First Name: ");
-                        userFirstName = scanner.next();
+                        int userAge = 0;
+                        // Validating first name
+                        do {
+                            // Asking user to enter first name
+                            System.out.print("First Name: ");
+                            userFirstName = scanner.next();
+                            if (!Student.isValidStudentName(userFirstName)) {
+                                System.out.println("\nFirst name must a letter\n");
+                            }
+                        } while (!Student.isValidStudentName(userFirstName));
 
-                        // Asking user to enter last name
-                        System.out.print("Last Name: ");
-                        userLastName = scanner.next();
+                        do {
+                            /// Asking user to enter last name
+                            System.out.print("Last Name: ");
+                            userLastName = scanner.next();
+                            if (!Student.isValidStudentName(userLastName)) {
+                                System.out.println("\nLast name must be a letter\n");
+                            }
+                        } while (!Student.isValidStudentName(userFirstName));
 
-                        // Asking user to enter age
-                        System.out.print("Age: ");
-                        int userAge = scanner.nextInt();
+                        // Validating Age
+                        do {
+                            // Asking user to enter age
+                            System.out.print("Age: ");
+                            userAge = scanner.nextInt();
+                            if (!(userAge < 0 || userAge < 110)) {
+                                System.out.println("Please enter a valid age");
+                            }
+                        } while (!(userAge < 0 || userAge < 110));
 
-                        // Checking if user enters a letter for first name and last name and number for age
-                        if (!(userFirstName.matches("[a-zA-Z]+") && userLastName.matches("[a-zA-Z]+"))) {
-                            System.out.println("\nFirst name and last name must be a letter");
-                        } else {
-                            String insertStudent = "INSERT INTO student (firstname, lastname, age)"
-                                    + "VALUES (?, ?, ?)";
+                        String insertStudent = "INSERT INTO student (firstname, lastname, age)"
+                                + "VALUES (?, ?, ?)";
 
-                            statement = connection.prepareStatement(insertStudent);
-                            statement.setString(1, userFirstName);
-                            statement.setString(2, userLastName);
-                            statement.setInt(3, userAge);
+                        statement = connection.prepareStatement(insertStudent);
+                        statement.setString(1, userFirstName);
+                        statement.setString(2, userLastName);
+                        statement.setInt(3, userAge);
 
-                            numRowsAffected = statement.executeUpdate();
-                            System.out.println(numRowsAffected + " row(s) affeted");
-                        }
+                        numRowsAffected = statement.executeUpdate();
+                        System.out.println(numRowsAffected + " row(s) affeted");
+
+                        // Updating the course list
+                        studentList();
                         break;
+
                     case 5: // Enroll a Student in a Course
 
                         // Calling method that dispalys all the students 
@@ -385,6 +438,9 @@ public class HotSchool {
 
                             numRowsAffected = statement.executeUpdate();
                             System.out.println(numRowsAffected + " row(s) affeted");
+
+                            // Updating course list
+                            courseList();
                         }
                         break;
                     case 8:
@@ -405,10 +461,12 @@ public class HotSchool {
                 scanner.nextLine();
             }
         }
-        if (connection != null) {
+        if (connection
+                != null) {
             connection.close();
         }
-        if (statement != null) {
+        if (statement
+                != null) {
             statement.close();
         }
     }
