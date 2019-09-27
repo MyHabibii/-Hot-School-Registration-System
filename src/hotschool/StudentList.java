@@ -31,4 +31,8 @@ public class StudentList {
     public void clear() {
         studentList.clear();
     }
+
+    public int indexOf(Student student) {
+        return studentList.indexOf(student);
+    }
 }

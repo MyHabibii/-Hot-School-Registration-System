@@ -1,6 +1,7 @@
 package hotschool;
 
 // Imports
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,18 +10,17 @@ import java.util.InputMismatchException;
 import java.util.Scanner;
 
 /**
- *
  * @author Bilaal & Zain
  */
 public class HotSchool {
 
     // Outside of main so that all methods can use it
     private static final Scanner scanner = new Scanner(System.in);
+    private static final StudentList studentList = new StudentList();
+    private static final CourseList courseList = new CourseList();
     public static Connection connection = DBConnector.getConnection();
     private static PreparedStatement statement = null;
     private static ResultSet resultSet = null;
-    private static final StudentList studentList = new StudentList();
-    private static final CourseList courseList = new CourseList();
     private static int numRowsAffected = 0;
 
     /**
@@ -35,7 +35,7 @@ public class HotSchool {
         // Refreshing the course list
         courseList.clear();
 
-        // Writing SQL query that selects the everything from the course table 
+        // Writing SQL query that selects the everything from the course table
         resultSet = connection.createStatement().executeQuery("SELECT * FROM course");
 
         // Adding courses from database to list
@@ -49,7 +49,7 @@ public class HotSchool {
         // Refreshing the student list
         studentList.clear();
 
-        // Writing SQL query that selects everything from the student table 
+        // Writing SQL query that selects everything from the student table
         resultSet = connection.createStatement().executeQuery("SELECT * FROM student");
 
         // Adding students from database to list
@@ -66,7 +66,7 @@ public class HotSchool {
 
         // Loop that goes through studentList
         for (int i = 0; i < studentList.getStudentList().size(); i++) {
-            int id = studentList.getStudentList().get(i).getStudentID();
+            int id = i + 1;
             String firstName = studentList.getStudentList().get(i).getFirstName();
             String lastName = studentList.getStudentList().get(i).getLastName();
             int age = studentList.getStudentList().get(i).getStudentAge();
@@ -78,6 +78,7 @@ public class HotSchool {
         System.out.println("------------------------------------------");
     }
 
+    // This method displays all the available courses
     private static void displayAllCourses() {
         // Formatting output for console
         System.out.printf("%2s %15s %15s\n", "ID", "Course Name", "Time");
@@ -96,6 +97,7 @@ public class HotSchool {
         System.out.println("-----------------------------------");
     }
 
+    // This method lists courses by student name
     private static void listCoursesByStudentName(String firstName, String lastName) throws SQLException {
         statement = connection.prepareStatement("SELECT c.name, c.time FROM student s, course c, studentcourse sc "
                 + "WHERE sc.studentId = s.id AND sc.courseId = c.id AND s.firstname = ? AND s.lastname = ?");
@@ -121,6 +123,7 @@ public class HotSchool {
         }
     }
 
+    // This method lists courses by student ID
     private static boolean listCoursesByStudentID(int studentID) throws SQLException {
         statement = connection.prepareStatement("SELECT c.id, c.name, c.time "
                 + "FROM student s, course c, studentcourse sc "
@@ -154,16 +157,21 @@ public class HotSchool {
         }
     }
 
+    // This method lists courses that students are not in
     private static boolean listCoursesStudentNotIn(int studentID) throws SQLException {
+
+        // Getting student's ID
+        int userStudentID = studentList.getStudentList().get(studentID - 1).getStudentID();
+
         statement = connection.prepareStatement("SELECT * FROM course "
                 + "WHERE id NOT IN (SELECT courseId FROM studentcourse WHERE studentId = ?)");
-        statement.setInt(1, studentID);
+        statement.setInt(1, userStudentID);
         resultSet = statement.executeQuery();
 
         // Getting student's first and last name
-        String firstName = studentList.getStudentList().get(studentID - 1).getFirstName();
-        String lastName = studentList.getStudentList().get(studentID - 1).getLastName();
-        
+        String firstName = studentList.getStudentList().get(userStudentID - 1).getFirstName();
+        String lastName = studentList.getStudentList().get(userStudentID - 1).getLastName();
+
         if (!resultSet.next()) {
             System.out.printf("\n%s %s is enrolled in all the courses.", firstName, lastName);
             return false;
@@ -186,6 +194,7 @@ public class HotSchool {
         return true;
     }
 
+    // This method lists students by course name
     private static void listStudentsByCourse(String courseName) throws SQLException {
         statement = connection.prepareStatement("SELECT s.firstname, s.lastname, s.age "
                 + "FROM student s, course c, studentcourse sc "
@@ -210,6 +219,7 @@ public class HotSchool {
         }
     }
 
+    // This method adds courses
     private static void addCourse(String courseName, String courseTime) throws SQLException {
         statement = connection.prepareStatement("INSERT INTO course (name, time)"
                 + "VALUES (?, ?)");
@@ -221,6 +231,7 @@ public class HotSchool {
         System.out.printf("\n%s was successfully added to system", courseName);
     }
 
+    // This method adds students
     private static void addStudent(String firstName, String lastName, int age) throws SQLException {
         statement = connection.prepareStatement("INSERT INTO student (firstname, lastname, age)"
                 + "VALUES (?, ?, ?)");
@@ -234,12 +245,16 @@ public class HotSchool {
         System.out.printf("\n%s %s was successfully added to system", firstName, lastName);
     }
 
+    // This method enrolls students to courses
     private static void enrollStudent(int studentID, int courseID) throws SQLException {
         statement = connection.prepareStatement("INSERT INTO studentcourse (studentId, courseId)"
                 + "VALUES (?, ?)");
 
-        statement.setInt(1, studentID);
-        statement.setInt(2, courseID);
+        int userStudentID = studentList.getStudentList().get(studentID - 1).getStudentID();
+        int userCourseID = courseList.getCourseList().get(courseID - 1).getCourseID();
+
+        statement.setInt(1, userStudentID);
+        statement.setInt(2, userCourseID);
 
         // Getting course name
         String courseName = courseList.getCourseList().get(courseID - 1).getCourseName();
@@ -253,6 +268,7 @@ public class HotSchool {
         System.out.printf("\n%s %s was successfully enrolled into %s", firstName, lastName, courseName);
     }
 
+    // This method un-enrolls students from courses
     private static void unEnrollStudent(int studentID, int courseID) throws SQLException {
         statement = connection.prepareStatement("DELETE FROM studentcourse "
                 + "WHERE studentId = ? AND courseId = ?");
@@ -274,6 +290,7 @@ public class HotSchool {
         courseList();
     }
 
+    // This method removes courses
     private static void removeCourse(int courseID) throws SQLException {
         statement = connection.prepareStatement("SELECT COUNT(*) AS count FROM studentcourse "
                 + "WHERE courseId = ?");
@@ -324,6 +341,39 @@ public class HotSchool {
         }
     }
 
+    // This method removes student
+    private static void removeStudent(int studentID) throws SQLException {
+        statement = connection.prepareStatement("SELECT COUNT(*) AS count FROM studentcourse "
+                + "WHERE studentID = ?");
+
+        statement.setInt(1, studentID);
+        resultSet = statement.executeQuery();
+        resultSet.next();
+
+        // Getting course name
+        String firstName = studentList.getStudentList().get(studentID - 1).getFirstName();
+        String lastName = studentList.getStudentList().get(studentID - 1).getLastName();
+
+        if (resultSet.getInt("count") != 0) {
+            System.out.printf("\n%s %s is enrolled in courses", firstName, lastName);
+
+            listCoursesByStudentID(studentID);
+        } else {
+            statement = connection.prepareStatement("DELETE FROM student "
+                    + "WHERE id = ?");
+
+            statement.setInt(1, studentID);
+
+            numRowsAffected = statement.executeUpdate();
+            System.out.println(numRowsAffected + " row(s) affected");
+            System.out.printf("\n%s %s was successfully removed from system", firstName, lastName);
+
+            // Updating student list
+            studentList();
+        }
+    }
+
+    // This method validates for any names entered
     private static String nameValidation(String type) {
         String name;
         do {
@@ -337,6 +387,7 @@ public class HotSchool {
         return name;
     }
 
+    // This method validates for course time
     private static String timeValidation() {
         String courseTime;
         do {
@@ -350,6 +401,7 @@ public class HotSchool {
         return courseTime;
     }
 
+    // This method validates for student's age
     private static int ageValidation() {
         int age;
         do {
@@ -363,13 +415,16 @@ public class HotSchool {
         return age;
     }
 
+    // This method displays the menu
     private static void menu() throws SQLException {
-        int selection;
 
+        // Variables
+        int selection;
         boolean keepAsking = true;
 
         // Loading students
         studentList();
+
         // Loading courses
         courseList();
 
@@ -384,9 +439,11 @@ public class HotSchool {
                         + "\n5. Enroll a Student in a Course"
                         + "\n6. Un-enroll a Student from a Course"
                         + "\n7. Remove a Course"
-                        + "\n8. Exit"
+                        + "\n8. Remove a Student"
+                        + "\n9. Exit"
                         + "\n\nPlease choose what you'd like to do: ");
                 selection = scanner.nextInt();
+
                 // Making the user enter a positive number
                 if (selection < 0) {
                     throw new IllegalArgumentException("\nSelection must be positive.");
@@ -408,7 +465,7 @@ public class HotSchool {
                         // Calling method that displays the courses that the student is in
                         listCoursesByStudentName(firstName, lastName);
                         break;
-                    case 2: // List Students given a course name    
+                    case 2: // List Students given a course name
 
                         // Calling method that displays all the courses available
                         displayAllCourses();
@@ -505,7 +562,19 @@ public class HotSchool {
                         // Calling method that removes course
                         removeCourse(courseID);
                         break;
-                    case 8:
+                    case 8: // Remove Student
+
+                        // Calling method that displays all students
+                        displayAllStudents();
+
+                        // Asking user to enter student id
+                        System.out.print("Select Student By ID: ");
+                        studentID = scanner.nextInt();
+
+                        // Calling method that removes student
+                        removeStudent(studentID);
+                        break;
+                    case 9:
                         // Exit
                         keepAsking = false;
                         break;
@@ -515,22 +584,27 @@ public class HotSchool {
                 }
             } catch (InputMismatchException error) {
                 System.out.println("\nTry again. (Incorrect input: a number is required)");
+
                 // Discard input
                 scanner.nextLine();
             } catch (IllegalArgumentException ex) {
                 System.out.println(ex.getMessage());
+
                 // Discard input
                 scanner.nextLine();
             } catch (IndexOutOfBoundsException ex) {
                 System.out.println("\nTry again. (Incorrect input: Out of bounds)");
             } catch (SQLException ignored) {
-
             }
         }
+
+        // Closing connection
         if (connection
                 != null) {
             connection.close();
         }
+
+        // Closing statement
         if (statement
                 != null) {
             statement.close();
