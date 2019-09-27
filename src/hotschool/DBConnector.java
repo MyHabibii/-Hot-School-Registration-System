@@ -1,5 +1,6 @@
 package hotschool;
 
+// Imports
 import static hotschool.HotSchool.connection;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -8,7 +9,7 @@ import java.sql.SQLException;
 /**
  * This class connects to the database
  *
- * @author bilaa
+ * @author Bilaal & Zain
  */
 public class DBConnector {
 

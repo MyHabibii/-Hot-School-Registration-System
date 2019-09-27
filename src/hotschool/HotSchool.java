@@ -1,5 +1,6 @@
 package hotschool;
 
+// Imports
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,17 +10,17 @@ import java.util.Scanner;
 
 /**
  *
- * @author bilaa
+ * @author Bilaal & Zain
  */
 public class HotSchool {
 
     // Outside of main so that all methods can use it
-    private static Scanner scanner = new Scanner(System.in);
+    private static final Scanner scanner = new Scanner(System.in);
     public static Connection connection = DBConnector.getConnection();
     private static PreparedStatement statement = null;
     private static ResultSet resultSet = null;
-    private static StudentList studentList = new StudentList();
-    private static CourseList courseList = new CourseList();
+    private static final StudentList studentList = new StudentList();
+    private static final CourseList courseList = new CourseList();
     private static int numRowsAffected = 0;
 
     /**
@@ -58,8 +59,8 @@ public class HotSchool {
     }
 
     // This method displays all the available students
-    private static void displayAllStudents() throws SQLException {
-        // Formating output for console 
+    private static void displayAllStudents() {
+        // Formatting output for console
         System.out.printf("%2s %15s %15s %5s\n", "ID", "First Name", "Last Name", "Age");
         System.out.println("------------------------------------------");
 
@@ -73,12 +74,12 @@ public class HotSchool {
             System.out.printf("%2d %15s %15s %5d\n", id, firstName, lastName, age);
         }
 
-        // Formating output for console
+        // Formatting output for console
         System.out.println("------------------------------------------");
     }
 
-    private static void displayAllCourses() throws SQLException {
-        // Formating output for console 
+    private static void displayAllCourses() {
+        // Formatting output for console
         System.out.printf("%2s %15s %15s\n", "ID", "Course Name", "Time");
         System.out.println("-----------------------------------");
 
@@ -91,23 +92,23 @@ public class HotSchool {
             System.out.printf("%2d %15s %15s\n", id, courseName, courseTime);
         }
 
-        // Formating output for console
+        // Formatting output for console
         System.out.println("-----------------------------------");
     }
 
-    private static void listCoursesByStudentName(String firstname, String lastName) throws SQLException {
+    private static void listCoursesByStudentName(String firstName, String lastName) throws SQLException {
         statement = connection.prepareStatement("SELECT c.name, c.time FROM student s, course c, studentcourse sc "
                 + "WHERE sc.studentId = s.id AND sc.courseId = c.id AND s.firstname = ? AND s.lastname = ?");
-        statement.setString(1, firstname);
+        statement.setString(1, firstName);
         statement.setString(2, lastName);
         resultSet = statement.executeQuery();
 
         // Checks if given student is enrolled in any courses
         if (!resultSet.next()) {
-            System.out.printf("\n%s %s is not enrolled in any courses\n", firstname, lastName);
+            System.out.printf("\n%s %s is not enrolled in any courses\n", firstName, lastName);
         } else {
-            // Formating output for console 
-            System.out.printf("\nList Of Courses That %s %s Is Enrolled In\n", firstname, lastName);
+            // Formatting output for console
+            System.out.printf("\nList Of Courses That %s %s Is Enrolled In\n", firstName, lastName);
             System.out.println("--------------------------------");
             System.out.printf("%13s %15s\n", "Course Name", "Time");
             System.out.println("--------------------------------");
@@ -115,7 +116,7 @@ public class HotSchool {
                 System.out.printf("%13s %15s\n", resultSet.getString("name"), resultSet.getString("time"));
             } while (resultSet.next());
 
-            // Formating output for console
+            // Formatting output for console
             System.out.println("--------------------------------");
         }
     }
@@ -136,7 +137,7 @@ public class HotSchool {
             System.out.printf("\n%s %s is not enrolled in any courses\n", firstName, lastName);
             return false;
         } else {
-            // Formating output for console
+            // Formatting output for console
             System.out.printf("\nList Of Courses That %s %s Is Enrolled In\n", firstName, lastName);
             System.out.println("--------------------------");
             System.out.printf("%2s %10s %10s\n", "ID", "Course", "Time");
@@ -147,7 +148,7 @@ public class HotSchool {
                 String time = resultSet.getString(3);
                 System.out.printf("%2d %10s %10s\n", id, course, time);
             } while (resultSet.next());
-            // Formating output for console
+            // Formatting output for console
             System.out.println("--------------------------");
             return true;
         }
@@ -164,10 +165,10 @@ public class HotSchool {
         String lastName = studentList.getStudentList().get(studentID - 1).getLastName();
         
         if (!resultSet.next()) {
-            System.out.printf("\n%s %s is not enrolled in any courses.", firstName, lastName);
+            System.out.printf("\n%s %s is enrolled in all the courses.", firstName, lastName);
             return false;
         } else {
-            // Formating output for console
+            // Formatting output for console
             System.out.printf("\nList Of Courses That %s %s Is Not Enrolled In\n", firstName, lastName);
             System.out.println("--------------------------");
             System.out.printf("%2s %10s %10s\n", "ID", "Course", "Time");
@@ -180,7 +181,7 @@ public class HotSchool {
             } while (resultSet.next());
         }
 
-        // Formating output for console
+        // Formatting output for console
         System.out.println("--------------------------");
         return true;
     }
@@ -195,7 +196,7 @@ public class HotSchool {
         if (!resultSet.next()) {
             System.out.printf("\nThere are no students enrolled in %s\n", courseName);
         } else {
-            // Formating output for console
+            // Formatting output for console
             System.out.printf("\nList Of Students That Are Enrolled in %s\n", courseName);
             System.out.println("--------------------------------------");
             System.out.printf("%15s %15s %5s\n", "First Name", "Last Name", "Age");
@@ -204,7 +205,7 @@ public class HotSchool {
                 System.out.printf("%15s %15s %5d\n", resultSet.getString("firstName"), resultSet.getString("lastName"), resultSet.getInt("age"));
             } while (resultSet.next());
 
-            // Formating output for console
+            // Formatting output for console
             System.out.println("--------------------------------------");
         }
     }
@@ -216,7 +217,7 @@ public class HotSchool {
         statement.setString(2, courseTime);
 
         numRowsAffected = statement.executeUpdate();
-        System.out.println(numRowsAffected + " row(s) affeted");
+        System.out.println(numRowsAffected + " row(s) affected");
         System.out.printf("\n%s was successfully added to system", courseName);
     }
 
@@ -229,7 +230,7 @@ public class HotSchool {
         statement.setInt(3, age);
 
         numRowsAffected = statement.executeUpdate();
-        System.out.println(numRowsAffected + " row(s) affeted");
+        System.out.println(numRowsAffected + " row(s) affected");
         System.out.printf("\n%s %s was successfully added to system", firstName, lastName);
     }
 
@@ -248,7 +249,7 @@ public class HotSchool {
         String lastName = studentList.getStudentList().get(studentID - 1).getLastName();
 
         numRowsAffected = statement.executeUpdate();
-        System.out.println(numRowsAffected + " row(s) affeted");
+        System.out.println(numRowsAffected + " row(s) affected");
         System.out.printf("\n%s %s was successfully enrolled into %s", firstName, lastName, courseName);
     }
 
@@ -267,7 +268,7 @@ public class HotSchool {
         String lastName = studentList.getStudentList().get(studentID - 1).getLastName();
 
         numRowsAffected = statement.executeUpdate();
-        System.out.println(numRowsAffected + " row(s) affeted");
+        System.out.println(numRowsAffected + " row(s) affected");
         System.out.printf("\n%s %s was successfully un-enrolled from %s", firstName, lastName, courseName);
 
         courseList();
@@ -295,7 +296,7 @@ public class HotSchool {
             resultSet = statement.executeQuery();
             resultSet.next();
 
-            // Formating output for console
+            // Formatting output for console
             System.out.printf("\nStudents That Are Enrolled In %s\n", courseName);
             System.out.println("---------------------------------------------------");
             System.out.printf("%15s %15s %15s\n", "First Name", "Last Name", "Course");
@@ -315,7 +316,7 @@ public class HotSchool {
             statement.setInt(1, courseID);
 
             numRowsAffected = statement.executeUpdate();
-            System.out.println(numRowsAffected + " row(s) affeted");
+            System.out.println(numRowsAffected + " row(s) affected");
             System.out.printf("\n%s was successfully removed from system", courseName);
 
             // Updating course list
@@ -324,7 +325,7 @@ public class HotSchool {
     }
 
     private static String nameValidation(String type) {
-        String name = "";
+        String name;
         do {
             // Asking user to enter course name
             System.out.print(type + " Name: ");
@@ -337,7 +338,7 @@ public class HotSchool {
     }
 
     private static String timeValidation() {
-        String courseTime = "";
+        String courseTime;
         do {
             // Asking user to enter time
             System.out.print("Time: ");
@@ -350,15 +351,15 @@ public class HotSchool {
     }
 
     private static int ageValidation() {
-        int age = 0;
+        int age;
         do {
             // Asking user to enter age
             System.out.print("Age: ");
             age = scanner.nextInt();
-            if (!(age < 0 || age < 110)) {
+            if (!(age > 0 && age < 110)) {
                 System.out.println("Please enter a valid age");
             }
-        } while (!(age < 0 || age < 110));
+        } while (!(age > 0 && age < 110));
         return age;
     }
 
@@ -395,7 +396,7 @@ public class HotSchool {
                 switch (selection) {
                     case 1: // List Courses given a student first name and last name
 
-                        // Calling method that dispalys all the students available 
+                        // Calling method that displays all the students available
                         displayAllStudents();
 
                         // Validating first name
@@ -409,7 +410,7 @@ public class HotSchool {
                         break;
                     case 2: // List Students given a course name    
 
-                        // Calling method that dispalys all the courses available 
+                        // Calling method that displays all the courses available
                         displayAllCourses();
 
                         // Validating course name
@@ -420,7 +421,7 @@ public class HotSchool {
                         break;
                     case 3: // Add Course
 
-                        // Calling method that dispalys all the courses available 
+                        // Calling method that displays all the courses available
                         displayAllCourses();
 
                         // Validating course name
@@ -454,16 +455,16 @@ public class HotSchool {
                         break;
                     case 5: // Enroll a Student in a Course
 
-                        // Calling method that dispalys all the students 
+                        // Calling method that displays all the students
                         displayAllStudents();
 
-                        // Asking uder to enter student id
+                        // Asking user to enter student id
                         System.out.print("Select Student By ID: ");
                         int studentID = scanner.nextInt();
 
-                        int courseID = 0;
+                        int courseID;
 
-                        // Calling method that dispalys courses that student is not in
+                        // Calling method that displays courses that student is not in
                         if (listCoursesStudentNotIn(studentID)) {
                             // Asking user to enter course id
                             System.out.print("Select Course By ID: ");
@@ -475,7 +476,7 @@ public class HotSchool {
                         break;
                     case 6: // Un-enroll a Student from a Course
 
-                        // Calling method that dispalys all the students 
+                        // Calling method that displays all the students
                         displayAllStudents();
 
                         // Asking user to enter student id
@@ -494,7 +495,7 @@ public class HotSchool {
                         break;
                     case 7: // Remove a Course
 
-                        // Calling method that dispalys all the courses 
+                        // Calling method that displays all the courses
                         displayAllCourses();
 
                         // Asking user to enter course id
@@ -522,7 +523,7 @@ public class HotSchool {
                 scanner.nextLine();
             } catch (IndexOutOfBoundsException ex) {
                 System.out.println("\nTry again. (Incorrect input: Out of bounds)");
-            } catch (SQLException ex) {
+            } catch (SQLException ignored) {
 
             }
         }

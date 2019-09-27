@@ -3,7 +3,7 @@ package hotschool;
 /**
  * This class implements a student
  *
- * @author bilaa
+ * @author Bilaal & Zain
  */
 public class Student {
 
@@ -26,10 +26,6 @@ public class Student {
         this.firstName = firstName;
         this.lastName = lastName;
         this.courseList = new CourseList();
-    }
-
-    Student() {
-
     }
 
     // Getter for studentID

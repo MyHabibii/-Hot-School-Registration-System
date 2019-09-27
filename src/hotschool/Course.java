@@ -3,7 +3,7 @@ package hotschool;
 /**
  * This class implements a course
  *
- * @author bilaa
+ * @author Bilaal & Zain
  */
 public class Course {
 
@@ -22,10 +22,6 @@ public class Course {
         this.courseID = courseID;
         this.courseName = courseName;
         this.courseTime = courseTime;
-    }
-
-    Course() {
-
     }
 
     // Getter for courseID

@@ -1,10 +1,11 @@
 package hotschool;
 
+// Imports
 import java.util.ArrayList;
 
 /**
  *
- * @author bilaa
+ * @author Bilaal & Zain
  */
 public class StudentList {
 
